@@ -1,32 +1,15 @@
- Operating System Files
-
-*.DS_Store
-Thumbs.db
-*.sw?
-.#*
-*#
-*~
-*.sublime-*
-
-# Build Artifacts
-
-.gradle/
-build/
+.DS_Store
 target/
-bin/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
 dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
 
-# Eclipse Project Files
+# Avoid ignoring Maven wrapper jar file (.jar files are usually ignored)
+!/.mvn/wrapper/maven-wrapper.jar
 
-.classpath
-.project
-.settings/
-
-# IntelliJ IDEA Files
-
-*.iml
-*.ipr
-*.iws
-*.idea
-
-README.html
+.idea
