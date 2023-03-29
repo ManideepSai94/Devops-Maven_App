@@ -1,44 +1,47 @@
 pipeline {
-	agent none
-
-	triggers {
-		pollSCM 'H/10 * * * *'
-	}
-
-	options {
-		disableConcurrentBuilds()
-		buildDiscarder(logRotator(numToKeepStr: '14'))
-	}
-
-	stages {
-		stage("test: baseline (jdk8)") {
-			agent {
-				docker {
-					image 'adoptopenjdk/openjdk8:latest'
-					args '-v $HOME/.m2:/tmp/jenkins-home/.m2'
-				}
-			}
-			options { timeout(time: 30, unit: 'MINUTES') }
-			steps {
-				sh 'test/run.sh'
-			}
-		}
-
-	}
-
-	post {
-		changed {
-			script {
-				slackSend(
-						color: (currentBuild.currentResult == 'SUCCESS') ? 'good' : 'danger',
-						channel: '#sagan-content',
-						message: "${currentBuild.fullDisplayName} - `${currentBuild.currentResult}`\n${env.BUILD_URL}")
-				emailext(
-						subject: "[${currentBuild.fullDisplayName}] ${currentBuild.currentResult}",
-						mimeType: 'text/html',
-						recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']],
-						body: "<a href=\"${env.BUILD_URL}\">${currentBuild.fullDisplayName} is reported as ${currentBuild.currentResult}</a>")
-			}
-		}
-	}
+    agent any
+    tools {
+        maven 'Maven363'
+    }
+    options {
+        timeout(10)
+        buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '5', numToKeepStr: '5')
+    }
+    stages {
+        stage('Build') {
+            steps {
+                sh "mvn clean install"
+            }
+        }
+        stage('upload artifact to nexus') {
+            steps {
+                nexusArtifactUploader artifacts: [
+                    [
+                        artifactId: 'wwp', 
+                        classifier: '', 
+                        file: 'target/wwp-1.0.0.war', 
+                        type: 'war'
+                    ]
+                ], 
+                    credentialsId: 'nexus3', 
+                    groupId: 'koddas.web.war', 
+                    nexusUrl: '10.0.0.91:8081', 
+                    nexusVersion: 'nexus3', 
+                    protocol: 'http', 
+                    repository: 'samplerepo', 
+                    version: '1.0.0'
+            }
+        }
+    }
+    post {
+        always{
+            deleteDir()
+        }
+        failure {
+            echo "sendmail -s mvn build failed receipients@my.com"
+        }
+        success {
+            echo "The job is successful"
+        }
+    }
 }
